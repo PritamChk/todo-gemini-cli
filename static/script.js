@@ -37,15 +37,15 @@ document.addEventListener('DOMContentLoaded', () => {
             fetch('/todos/'),
             fetch('/todos/count')
         ]);
-        notes = await notesResponse.json();
+        notes = await notesResponse.json(); // Update the global notes array with raw data
         const countData = await countResponse.json();
         todoCountElement.textContent = `Total Todos: ${countData.count}`;
-        sortAndFilterNotes();
+        sortAndFilterNotes(); // Then apply sorting and filtering
     };
 
     // Sort and filter notes
     const sortAndFilterNotes = () => {
-        let displayedNotes = [...notes]; // Start with a fresh copy of all notes
+        let currentNotes = [...notes]; // Start with a fresh copy of all notes
 
         // Filter by date range
         const filterDateFromValue = filterDateFromInput.value;
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const fromDate = filterDateFromValue ? new Date(filterDateFromValue) : null;
             const toDate = filterDateToValue ? new Date(filterDateToValue) : null;
 
-            displayedNotes = displayedNotes.filter(note => {
+            currentNotes = currentNotes.filter(note => {
                 const noteCreatedAt = new Date(note.created_at);
                 noteCreatedAt.setHours(0, 0, 0, 0); // Normalize to start of day
 
@@ -75,14 +75,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Filter by completion status
         const filterCompletionValue = filterCompletionSelect.value;
         if (filterCompletionValue === 'completed') {
-            displayedNotes = displayedNotes.filter(note => note.completed);
+            currentNotes = currentNotes.filter(note => note.completed);
         } else if (filterCompletionValue === 'incomplete') {
-            displayedNotes = displayedNotes.filter(note => !note.completed);
+            currentNotes = currentNotes.filter(note => !note.completed);
         } // 'all' option means no filtering needed here
 
         // Sort notes
         const sortBy = sortBySelect.value;
-        displayedNotes.sort((a, b) => {
+        currentNotes.sort((a, b) => {
             if (sortBy === 'created_at_desc') {
                 return new Date(b.created_at) - new Date(a.created_at);
             } else if (sortBy === 'created_at_asc') {
@@ -103,7 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return 0;
         });
 
-        renderNotes(displayedNotes);
+        // Update the displayed count based on filtered/sorted notes
+        todoCountElement.textContent = `Displayed Todos: ${currentNotes.length}`;
+        renderNotes(currentNotes);
     };
 
     // Render notes on the page
@@ -112,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         notesToRender.forEach(note => {
             const noteElement = document.createElement('div');
             const colorClass = `color-${(notesToRender.indexOf(note) % 4) + 1}`;
-            noteElement.classList.add('bg-white', 'p-4', 'rounded-lg', 'shadow-md', 'note-card', colorClass, 'relative', 'flex', 'flex-col', 'justify-between');
+            noteElement.classList.add('bg-white', 'p-4', 'rounded-lg', 'shadow-md', 'note-card', colorClass, 'relative', 'flex', 'flex-col', 'justify-between', 'pb-16');
 
             let checklistHtml = '';
             if (note.checklist && note.checklist.length > 0) {
@@ -129,25 +131,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             noteElement.innerHTML = `
-                <div class="flex-grow">
+                <div class="flex-grow mb-4"> <!-- Added mb-4 for spacing -->
                     <h2 class="text-xl font-semibold mb-2">${note.title}</h2>
-                    <p class="text-gray-700">${note.content}</p>
+                    <p class="text-gray-700 mb-2">${note.content}</p> <!-- Added mb-2 for spacing -->
                     ${checklistHtml}
-                    <div class="text-xs text-gray-500 mt-2">
-                        Created: ${new Date(note.created_at).toLocaleString()}
-                    </div>
-                    <div class="text-xs text-gray-500">
-                        Modified: ${new Date(note.updated_at).toLocaleString()}
-                    </div>
                 </div>
-                <div class="absolute bottom-0 left-0 p-4">
-                    <button data-id="${note.id}" class="toggle-completed-btn px-3 py-1 rounded-md text-sm ${note.completed ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-700'}">
-                        ${note.completed ? '✅' : 'Mark Complete'}
-                    </button>
-                </div>
-                <div class="absolute bottom-0 right-0 flex justify-end p-4">
-                    <button data-id="${note.id}" class="edit-btn text-blue-500 hover:text-blue-700 mr-2">Edit</button>
-                    <button data-id="${note.id}" class="delete-btn text-red-500 hover:text-red-700">Delete</button>
+                <div class="absolute bottom-0 left-0 right-0 p-4 flex justify-between items-end">
+                    <div>
+                        <div class="text-xs text-gray-500">
+                            Created: ${new Date(note.created_at).toLocaleString()}
+                        </div>
+                        <div class="text-xs text-gray-500 mb-2"> <!-- Added mb-2 for spacing -->
+                            Modified: ${new Date(note.updated_at).toLocaleString()}
+                        </div>
+                        <button data-id="${note.id}" class="toggle-completed-btn px-3 py-1 rounded-md text-sm ${note.completed ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-700'}">
+                            ${note.completed ? '✅' : 'Mark Complete'}
+                        </button>
+                    </div>
+                    <div class="flex justify-end">
+                        <button data-id="${note.id}" class="edit-btn text-blue-500 hover:text-blue-700 mr-2">Edit</button>
+                        <button data-id="${note.id}" class="delete-btn text-red-500 hover:text-red-700">Delete</button>
+                    </div>
                 </div>
             `;
             notesContainer.appendChild(noteElement);
