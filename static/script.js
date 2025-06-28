@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Sort and filter notes
     const sortAndFilterNotes = () => {
-        let displayedNotes = [...notes];
+        let displayedNotes = [...notes]; // Start with a fresh copy of all notes
 
         // Filter by date range
         const filterDateFromValue = filterDateFromInput.value;
@@ -57,17 +57,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             displayedNotes = displayedNotes.filter(note => {
                 const noteCreatedAt = new Date(note.created_at);
-                // Set time to 00:00:00 for accurate date comparison
-                noteCreatedAt.setHours(0, 0, 0, 0);
+                noteCreatedAt.setHours(0, 0, 0, 0); // Normalize to start of day
 
                 let passesFilter = true;
                 if (fromDate) {
                     passesFilter = passesFilter && (noteCreatedAt >= fromDate);
                 }
                 if (toDate) {
-                    // Add one day to 'toDate' to include notes created on 'toDate'
                     const adjustedToDate = new Date(toDate);
-                    adjustedToDate.setDate(adjustedToDate.getDate() + 1);
+                    adjustedToDate.setDate(adjustedToDate.getDate() + 1); // Include notes created on 'toDate'
                     passesFilter = passesFilter && (noteCreatedAt < adjustedToDate);
                 }
                 return passesFilter;
@@ -76,16 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Filter by completion status
         const filterCompletionValue = filterCompletionSelect.value;
-        if (filterCompletionValue !== 'all') {
-            displayedNotes = displayedNotes.filter(note => {
-                if (filterCompletionValue === 'completed') {
-                    return note.completed;
-                } else if (filterCompletionValue === 'incomplete') {
-                    return !note.completed;
-                }
-                return true;
-            });
-        }
+        if (filterCompletionValue === 'completed') {
+            displayedNotes = displayedNotes.filter(note => note.completed);
+        } else if (filterCompletionValue === 'incomplete') {
+            displayedNotes = displayedNotes.filter(note => !note.completed);
+        } // 'all' option means no filtering needed here
 
         // Sort notes
         const sortBy = sortBySelect.value;
@@ -110,8 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return 0;
         });
 
-        notes = displayedNotes; // Update the global notes array with the sorted and filtered data
-        renderNotes();
+        renderNotes(displayedNotes);
     };
 
     // Render notes on the page
@@ -120,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         notesToRender.forEach(note => {
             const noteElement = document.createElement('div');
             const colorClass = `color-${(notesToRender.indexOf(note) % 4) + 1}`;
-            noteElement.classList.add('bg-white', 'p-4', 'rounded-lg', 'shadow-md', 'note-card', colorClass, 'relative', 'pb-10');
+            noteElement.classList.add('bg-white', 'p-4', 'rounded-lg', 'shadow-md', 'note-card', colorClass, 'relative', 'flex', 'flex-col', 'justify-between');
 
             let checklistHtml = '';
             if (note.checklist && note.checklist.length > 0) {
@@ -137,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             noteElement.innerHTML = `
-                <div>
+                <div class="flex-grow">
                     <h2 class="text-xl font-semibold mb-2">${note.title}</h2>
                     <p class="text-gray-700">${note.content}</p>
                     ${checklistHtml}
@@ -241,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 notes.push(await response.json());
-                sortAndFilterNotes(); // Re-sort and filter after adding new note
+                fetchNotes(); // Re-fetch and re-render notes
                 addNoteModal.classList.add('hidden');
             }
         }
@@ -292,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const index = notes.findIndex(note => note.id === todoId);
                 if (index !== -1) {
                     notes[index] = updatedNoteFromServer;
-                    sortAndFilterNotes(); // Re-sort and filter after updating note
+                    fetchNotes(); // Re-fetch and re-render notes
                 }
                 editNoteModal.classList.add('hidden');
             }
@@ -320,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 notes = notes.filter(note => note.id !== todoId);
-                sortAndFilterNotes(); // Re-sort and filter after deleting note
+                fetchNotes(); // Re-fetch and re-render notes
             }
         } else if (e.target.type === 'checkbox' && e.target.dataset.noteId && e.target.dataset.itemIndex) {
             const todoId = e.target.dataset.noteId;
@@ -356,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(note),
                 });
                 if (response.ok) {
-                    sortAndFilterNotes();
+                    fetchNotes();
                 }
             }
         }
