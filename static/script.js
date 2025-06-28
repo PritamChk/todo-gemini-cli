@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterDateFromInput = document.getElementById('filter-date-from');
     const filterDateToInput = document.getElementById('filter-date-to');
     const resetFilterBtn = document.getElementById('reset-filter-btn');
+    const todoCountElement = document.getElementById('todo-count');
+    const filterCompletionSelect = document.getElementById('filter-completion');
 
     let notes = [];
     let currentNewNoteChecklist = [];
@@ -31,8 +33,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Fetch existing notes from the backend
     const fetchNotes = async () => {
-        const response = await fetch('/todos/');
-        notes = await response.json();
+        const [notesResponse, countResponse] = await Promise.all([
+            fetch('/todos/'),
+            fetch('/todos/count')
+        ]);
+        notes = await notesResponse.json();
+        const countData = await countResponse.json();
+        todoCountElement.textContent = `Total Todos: ${countData.count}`;
         sortAndFilterNotes();
     };
 
@@ -67,6 +74,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Filter by completion status
+        const filterCompletionValue = filterCompletionSelect.value;
+        if (filterCompletionValue !== 'all') {
+            displayedNotes = displayedNotes.filter(note => {
+                if (filterCompletionValue === 'completed') {
+                    return note.completed;
+                } else if (filterCompletionValue === 'incomplete') {
+                    return !note.completed;
+                }
+                return true;
+            });
+        }
+
         // Sort notes
         const sortBy = sortBySelect.value;
         displayedNotes.sort((a, b) => {
@@ -82,6 +102,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return a.title.localeCompare(b.title);
             } else if (sortBy === 'title_desc') {
                 return b.title.localeCompare(a.title);
+            } else if (sortBy === 'completed_asc') {
+                return a.completed - b.completed; // false (0) comes before true (1)
+            } else if (sortBy === 'completed_desc') {
+                return b.completed - a.completed; // true (1) comes before false (0)
             }
             return 0;
         });
@@ -123,6 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="text-xs text-gray-500">
                         Modified: ${new Date(note.updated_at).toLocaleString()}
                     </div>
+                </div>
+                <div class="absolute bottom-0 left-0 p-4">
+                    <button data-id="${note.id}" class="toggle-completed-btn px-3 py-1 rounded-md text-sm ${note.completed ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-700'}">
+                        ${note.completed ? '✅' : 'Mark Complete'}
+                    </button>
                 </div>
                 <div class="absolute bottom-0 right-0 flex justify-end p-4">
                     <button data-id="${note.id}" class="edit-btn text-blue-500 hover:text-blue-700 mr-2">Edit</button>
@@ -314,6 +343,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     sortAndFilterNotes(); // Re-sort and filter to update UI (e.g., line-through)
                 }
             }
+        } else if (e.target.classList.contains('toggle-completed-btn')) {
+            const todoId = e.target.dataset.id;
+            const note = notes.find(n => n.id === todoId);
+            if (note) {
+                note.completed = !note.completed; // Toggle completion status
+                const response = await fetch(`/todos/${todoId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(note),
+                });
+                if (response.ok) {
+                    sortAndFilterNotes();
+                }
+            }
         }
     });
 
@@ -321,10 +366,12 @@ document.addEventListener('DOMContentLoaded', () => {
     sortBySelect.addEventListener('change', sortAndFilterNotes);
     filterDateFromInput.addEventListener('change', sortAndFilterNotes);
     filterDateToInput.addEventListener('change', sortAndFilterNotes);
+    filterCompletionSelect.addEventListener('change', sortAndFilterNotes);
     resetFilterBtn.addEventListener('click', () => {
         filterDateFromInput.value = ''; // Clear the from date filter
         filterDateToInput.value = ''; // Clear the to date filter
         sortBySelect.value = 'created_at_desc'; // Reset sort to default
+        filterCompletionSelect.value = 'all'; // Reset completion filter to all
         fetchNotes(); // Re-fetch and re-render notes
     });
 

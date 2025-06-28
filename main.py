@@ -51,7 +51,8 @@ async def create_todo(todo: Dict = Body(...)):
         "content": todo["content"],
         "checklist": todo.get("checklist", []), # Initialize checklist as empty list if not provided
         "created_at": now,
-        "updated_at": now
+        "updated_at": now,
+        "completed": False # New field for completion status
     }
     todos.append(new_note)
     save_todos()
@@ -80,7 +81,13 @@ async def update_todo(todo_id: str, todo_update: Dict = Body(...)):
             note["title"] = todo_update.get("title", note["title"])
             note["content"] = todo_update.get("content", note["content"])
             note["checklist"] = todo_update.get("checklist", note.get("checklist", []))
+            note["completed"] = todo_update.get("completed", note.get("completed", False))
             note["updated_at"] = datetime.utcnow().isoformat()
             save_todos()
             return note
     raise HTTPException(status_code=404, detail="Todo not found")
+
+@app.get("/todos/count", response_model=Dict)
+async def get_todos_count():
+    load_todos()
+    return {"count": len(todos)}

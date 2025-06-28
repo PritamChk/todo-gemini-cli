@@ -10,6 +10,7 @@
 <body class="bg-gray-100">
     <div class="container mx-auto p-4">
         <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Gemini Notes</h1>
+        <div id="todo-count" class="text-center text-lg font-medium text-gray-600 mb-4"></div>
 
         <div class="flex justify-between items-center mb-6">
             <div class="flex items-center space-x-4">
@@ -21,6 +22,16 @@
                     <option value="updated_at_asc">Modified Date (Oldest First)</option>
                     <option value="title_asc">Title (A-Z)</option>
                     <option value="title_desc">Title (Z-A)</option>
+                    <option value="completed_asc">Completed (Incomplete First)</option>
+                    <option value="completed_desc">Completed (Complete First)</option>
+                </select>
+            </div>
+            <div class="flex items-center space-x-4">
+                <label for="filter-completion" class="font-medium text-gray-700">Completion:</label>
+                <select id="filter-completion" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="all">All</option>
+                    <option value="completed">Completed</option>
+                    <option value="incomplete">Incomplete</option>
                 </select>
             </div>
             <div class="flex items-center space-x-4">
